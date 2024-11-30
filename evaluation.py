@@ -10,7 +10,7 @@ output_directory = "output"
 # make sure the directory exists
 makedirs(output_directory, exist_ok=True)
 
-data_directory = "HF_GA_AUP"
+data_directory = "data/HF_GA_AUP"
 
 filename_pattern = "*spect_convert.txt"
 
