@@ -35,15 +35,13 @@ for file in files:
         header=0,
         names=["time", "L", "a", "b", "dE76", "dE94", "delta_e_2000", "dL", "da", "db"],
         usecols=["time", "delta_e_2000"],
-        index_col="time",
+        # index_col="time",
     )
-    print(df)
+    df.index.name = "index"
     dataframes.append(df)
 
 
-def plot_first_and_last_measurement(
-    data: list[pd.DataFrame], output_filename: str
-) -> None:
+def plot_delta_e_2000(data: list[pd.DataFrame], output_filename: str) -> None:
     figure = plot.figure()
     axes = figure.subplots()
     # axes.set_ylabel("Reflectance [%]")
@@ -52,28 +50,53 @@ def plot_first_and_last_measurement(
     # axes.set_xlim(420, 720)
     axes.grid(alpha=0.5)
 
+    function_values_dfs = []
+
+    # linespace to evaluate function at 1000 points between 0 and 300
+    x_new = np.linspace(0, 300, 1000)
+
     for i, datum in enumerate(data):
+        datum = datum.set_index("time")
 
+        # generate function from data
         z = np.polyfit(datum.index.to_list(), datum["delta_e_2000"], 16)
-
         f = np.poly1d(z)
 
-        x_new = np.linspace(datum.first_valid_index(), datum.last_valid_index(), 100)
         y_new = f(x_new)
 
-        axes.plot(x_new, y_new, linewidth=0.4, color="black")
+        df = pd.DataFrame(y_new, x_new, columns=["delta_e_2000"])
+        df.index.name = "time"
+
+        # save new values
+        function_values_dfs.append(df)
+
+        # axes.plot(x_new, y_new, linewidth=0.4, color="black")
 
         axes.plot(
             datum["delta_e_2000"],
             "o",
             label="measure {}".format(i),
-            # color="green",
+            color="gray",
             markersize=0.5,
-            # linewidth=0.8,
+            linewidth=0.8,
         )
+
+    df_mean = pd.concat(function_values_dfs).groupby("time").mean()
+    df_mean2 = pd.concat(data).groupby("index").mean().set_index("time")
+
+    # df_std = pd.concat(function_values_dfs).groupby("time").std()
+    # df_std2 = pd.concat(data).groupby("index").std()
+
+    axes.plot(
+        df_mean,
+        "-",
+        label="mean",
+        color="green",
+        linewidth=0.3,
+    )
 
     axes.legend()
     figure.savefig("{}/{}.png".format(output_directory, output_filename), dpi=1200)
 
 
-plot_first_and_last_measurement(dataframes, "delta_e_2000")
+plot_delta_e_2000(dataframes, "delta_e_2000")
