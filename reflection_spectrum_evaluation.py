@@ -12,13 +12,13 @@ def plot_first_and_last_measurement(data: pd.DataFrame, output: Path) -> None:
     axes.set_xlim(420, 720)
     axes.grid(alpha=0.5)
     axes.plot(
-        data["first_measurement_mapped"],
+        data["first_measurement_normalized"],
         label="First Measurement",
         color="green",
         linewidth=0.8,
     )
     axes.plot(
-        data["last_measurement_mapped"],
+        data["last_measurement_normalized"],
         label="Last Measurement",
         color="red",
         linewidth=0.8,
@@ -45,14 +45,20 @@ def evaluate_reflection_spectrum(files: list[Path], output: Path):
         )
 
         # add columns with result of this formula without altering any other column
-        df["first_measurement_mapped"] = df["first_measurement"] / df["white_std"] * 100
-        df["last_measurement_mapped"] = df["last_measurement"] / df["white_std"] * 100
+        df["first_measurement_normalized"] = (
+            df["first_measurement"] / df["white_std"] * 100
+        )
+        df["last_measurement_normalized"] = (
+            df["last_measurement"] / df["white_std"] * 100
+        )
 
         dataframes.append(df)
 
     # remove unused columns
     dataframes_stripped = map(
-        lambda frame: frame[["first_measurement_mapped", "last_measurement_mapped"]],
+        lambda frame: frame[
+            ["first_measurement_normalized", "last_measurement_normalized"]
+        ],
         dataframes,
     )
 
