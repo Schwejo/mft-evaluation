@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import re
 from reflection_spectrum_evaluation import evaluate_reflection_spectrum
+from delta_e2000_evaluation import evaluate_delta_e2000
 
 data_path = Path("data")
 
@@ -24,4 +25,5 @@ for dir in next(os.walk(data_path))[1]:
         if not_spect_regex.match(file.parts[-1]):
             not_spect_files.append(file)
 
-evaluate_reflection_spectrum(sorted(spect_convert_files), output_path)
+# evaluate_reflection_spectrum(sorted(spect_convert_files), output_path)
+evaluate_delta_e2000(not_spect_files, output_path)

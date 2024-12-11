@@ -6,42 +6,8 @@ from os import makedirs, listdir
 import re
 import numpy as np
 
-# directory to put generated files in
-output_directory = "output"
 
-# make sure the directory exists
-makedirs(output_directory, exist_ok=True)
-
-data_directory = "data/HF_GA_AUP"
-
-# match any .txt file
-filename_pattern = "*.txt"
-
-files = sorted(glob("{}/{}".format(data_directory, filename_pattern)))
-
-# match every string that does NOT include "spect"
-filename_regex = re.compile("^((?!spect).)*$")
-
-files = [i for i in files if filename_regex.match(i)]
-
-# list that holds a dataframe for each measurement file
-dataframes = []
-
-for file in files:
-    df = pd.read_csv(
-        file,
-        sep="\t",
-        skiprows=3,
-        header=0,
-        names=["time", "L", "a", "b", "dE76", "dE94", "delta_e_2000", "dL", "da", "db"],
-        usecols=["time", "delta_e_2000"],
-        # index_col="time",
-    )
-    df.index.name = "index"
-    dataframes.append(df)
-
-
-def plot_delta_e_2000(data: list[pd.DataFrame], output_filename: str) -> None:
+def plot_delta_e_2000(data: list[pd.DataFrame], output: Path) -> None:
     figure = plot.figure()
     axes = figure.subplots()
     # axes.set_ylabel("Reflectance [%]")
@@ -96,7 +62,37 @@ def plot_delta_e_2000(data: list[pd.DataFrame], output_filename: str) -> None:
     )
 
     axes.legend()
-    figure.savefig("{}/{}.png".format(output_directory, output_filename), dpi=1200)
+    figure.savefig(output, dpi=1200)
 
 
-plot_delta_e_2000(dataframes, "delta_e_2000")
+def evaluate_delta_e2000(files: list[Path], output: Path):
+    # list that holds a dataframe for each measurement file
+    dataframes = []
+
+    for file in files:
+        df = pd.read_csv(
+            file,
+            sep="\t",
+            skiprows=3,
+            header=0,
+            names=[
+                "time",
+                "L",
+                "a",
+                "b",
+                "dE76",
+                "dE94",
+                "delta_e_2000",
+                "dL",
+                "da",
+                "db",
+            ],
+            usecols=["time", "delta_e_2000"],
+            # index_col="time",
+        )
+        df.index.name = "index"
+        dataframes.append(df)
+
+    plot_delta_e_2000(
+        dataframes, output.joinpath("{}_delta_e2000.png".format(files[0].stem))
+    )
