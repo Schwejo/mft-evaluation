@@ -1,9 +1,6 @@
-from glob import glob
 import pandas as pd
 import matplotlib.pyplot as plot
 from pathlib import Path
-from os import makedirs, listdir
-import re
 import numpy as np
 
 
@@ -18,19 +15,9 @@ def plot_delta_e_2000(data: list[pd.DataFrame], output: Path) -> None:
 
     function_values_dfs = []
 
-    # linespace to evaluate function at 1000 points between 0 and 300
-    x_new = np.linspace(0, 300, 1000)
-
     for i, datum in enumerate(data):
         datum = datum.set_index("time")
 
-        # generate function from data
-        z = np.polyfit(datum.index.to_list(), datum["delta_e_2000"], 16)
-        f = np.poly1d(z)
-
-        y_new = f(x_new)
-
-        df = pd.DataFrame(y_new, x_new, columns=["delta_e_2000"])
         df.index.name = "time"
 
         # save new values
@@ -69,6 +56,12 @@ def evaluate_delta_e2000(files: list[Path], output: Path):
     # list that holds a dataframe for each measurement file
     dataframes = []
 
+    delta_e2000_curvefit_dataframes = []
+
+    # make x values to evaluate all functions at to make them comparable
+    # TODO read stop value from the measurement file
+    x_values_uniform = np.linspace(0, 300, 300, dtype=int)
+
     for file in files:
         df = pd.read_csv(
             file,
@@ -88,11 +81,31 @@ def evaluate_delta_e2000(files: list[Path], output: Path):
                 "db",
             ],
             usecols=["time", "delta_e_2000"],
-            # index_col="time",
+            index_col="time",
         )
-        df.index.name = "index"
+
         dataframes.append(df)
 
-    plot_delta_e_2000(
-        dataframes, output.joinpath("{}_delta_e2000.png".format(files[0].stem))
+        # generate function from data
+        fit = np.polyfit(df.index.to_list(), df["delta_e_2000"], 16)
+        f = np.poly1d(fit)
+
+        y_values = f(x_values_uniform)
+
+        df_delta_e2000_curvefit = pd.DataFrame(
+            y_values, x_values_uniform, columns=["delta_e_2000"]
+        )
+
+        df_delta_e2000_curvefit.index.name = "time"
+
+        delta_e2000_curvefit_dataframes.append(df_delta_e2000_curvefit)
+
+    df_delta_e200_mean = (
+        pd.concat(delta_e2000_curvefit_dataframes).groupby("time").mean()
     )
+
+    print(df_delta_e200_mean)
+
+    # plot_delta_e_2000(
+    #     dataframes, output.joinpath("{}_delta_e2000.png".format(files[0].stem))
+    # )
