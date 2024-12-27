@@ -107,11 +107,11 @@ def plot_delta_e_2000(data: list[pd.DataFrame], output_filename: str) -> None:
 
     figure.clf()
 
-    axes2 = figure.subplots()
-    axes2.set_ylabel("b*")
-    axes2.set_xlabel("a*")
-    axes2.set_title("a*b* values")
-    axes2.plot(
+    axes = figure.subplots()
+    axes.set_ylabel("b*")
+    axes.set_xlabel("a*")
+    axes.set_title("a*b* values")
+    axes.plot(
         df_mean["a"],
         df_mean["b"],
         "o",
@@ -120,7 +120,23 @@ def plot_delta_e_2000(data: list[pd.DataFrame], output_filename: str) -> None:
         color="green",
     )
 
-    figure.savefig("{}/{}.png".format(output_directory, "test"), dpi=1200)
+    figure.savefig("{}/{}.png".format(output_directory, "ab_values"), dpi=1200)
+
+    figure.clf()
+
+    axes = figure.subplots()
+    axes.set_ylabel("L*")
+    axes.set_xlabel("Time")
+    axes.set_title("L* values")
+    axes.plot(
+        df_mean["L"],
+        "o",
+        markersize=0.4,
+        linewidth=0.4,
+        color="green",
+    )
+
+    figure.savefig("{}/{}.png".format(output_directory, "l_values"), dpi=1200)
 
 
 plot_delta_e_2000(dataframes, "delta_e_2000_01")
