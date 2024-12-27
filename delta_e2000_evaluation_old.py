@@ -111,16 +111,16 @@ def plot_delta_e_2000(data: list[pd.DataFrame], output_filename: str) -> None:
     axes.set_ylabel("b*")
     axes.set_xlabel("a*")
     axes.set_title("a*b* values")
-    axes.plot(
-        df_mean["a"],
-        df_mean["b"],
-        "o",
-        markersize=0.4,
-        linewidth=0.4,
-        color="green",
-    )
+    # axes.plot(
+    # df_mean["a"],
+    # df_mean["b"],
+    # "o",
+    # markersize=0.4,
+    # linewidth=0.4,
+    # color="green",
+    # )
 
-    figure.savefig("{}/{}.png".format(output_directory, "ab_values"), dpi=1200)
+    # figure.savefig("{}/{}.png".format(output_directory, "ab_values"), dpi=1200)
 
     figure.clf()
 
@@ -128,45 +128,61 @@ def plot_delta_e_2000(data: list[pd.DataFrame], output_filename: str) -> None:
     axes.set_ylabel("L*")
     axes.set_xlabel("Time")
     axes.set_title("L* values")
-    axes.plot(
-        df_mean["L"],
-        "o",
-        markersize=0.4,
-        linewidth=0.4,
-        color="green",
+    # axes.plot(
+    # df_mean["L"],
+    # "o",
+    # markersize=0.4,
+    # linewidth=0.4,
+    # color="green",
+    # )
+
+    # figure.savefig("{}/{}.png".format(output_directory, "l_values"), dpi=1200)
+
+    lab_end_mean_values = df_mean.tail(1)[["db", "da", "dL"]].values[0]
+    lab_end_std_values = df_std.tail(1)[["db", "da", "dL"]].values[0]
+
+    colors = ["" for _ in range(3)]
+
+    for index, value in enumerate(lab_end_mean_values):
+        if value < 0:
+            if index == 0:
+                colors[0] = "#565656"
+            if index == 1:
+                colors[1] = "#4dd72f"
+            if index == 2:
+                colors[2] = "#1a71e3"
+        else:
+            if index == 0:
+                colors[0] = "#aeaeae"
+            if index == 1:
+                colors[1] = "#e3371a"
+            if index == 2:
+                colors[2] = "#e3c81a"
+
+    colors.reverse()
+
+    figure.clf()
+
+    axes = figure.subplots()
+    axes.yaxis.set_ticks([0, 1, 2], ["db", "da", "dL"])
+    axes.barh(
+        [0, 1, 2],
+        lab_end_mean_values,
+        height=1,
+        color=colors,
     )
 
-    figure.savefig("{}/{}.png".format(output_directory, "l_values"), dpi=1200)
+    axes.errorbar(
+        lab_end_mean_values,
+        [0, 1, 2],
+        xerr=lab_end_std_values,
+        fmt=",",
+        color="black",
+        capsize=10,
+        elinewidth=1,
+    )
+
+    figure.savefig("{}/{}.png".format(output_directory, "dLab"), dpi=1200)
 
 
 plot_delta_e_2000(dataframes, "delta_e_2000_01")
-
-
-""" 
-    for i, datum in enumerate(data):
-        datum = datum.set_index("time")
-
-        # generate function from data
-        z = np.polyfit(datum.index.to_list(), datum["delta_e_2000"], 16)
-        f = np.poly1d(z)
-
-        y_new = f(x_new)
-
-        df = pd.DataFrame(y_new, x_new, columns=["delta_e_2000"])
-        df.index.name = "time"
-
-        # save new values
-        function_values_dfs.append(df)
-
-        # axes.plot(x_new, y_new, linewidth=0.4, color="black")
-
-        axes.plot(
-            datum["delta_e_2000"],
-            "o",
-            label="measure {}".format(i),
-            color="gray",
-            markersize=0.5,
-            linewidth=0.8,
-        )
-
- """
