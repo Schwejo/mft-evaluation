@@ -34,7 +34,7 @@ for file in files:
         skiprows=3,
         header=0,
         names=["time", "L", "a", "b", "dE76", "dE94", "delta_e_2000", "dL", "da", "db"],
-        usecols=["time", "delta_e_2000"],
+        usecols=["time", "dE76", "dE94", "delta_e_2000", "dL", "da", "db"],
     )
     df.index.name = "index"
     dataframes.append(df)
@@ -53,8 +53,7 @@ def plot_delta_e_2000(data: list[pd.DataFrame], output_filename: str) -> None:
     x_new = np.linspace(0, 300, 1000)
 
     df_mean = pd.concat(data).groupby("index").mean().set_index("time")
-
-    print(df_mean)
+    df_std = pd.concat(data).groupby("index").std()
 
     # generate function from data
     z = np.polyfit(df_mean.index.to_list(), df_mean["delta_e_2000"], 16)
@@ -65,27 +64,34 @@ def plot_delta_e_2000(data: list[pd.DataFrame], output_filename: str) -> None:
     # dirty
     y_new[0] = 0
 
-    print(y_new[0])
-
     df = pd.DataFrame(y_new, x_new, columns=["delta_e_2000"])
     df.index.name = "time"
 
     axes.plot(x_new, y_new, linewidth=0.4, color="black")
 
-    # axes.plot(
-    #     datum["delta_e_2000"],
-    #     "o",
-    #     label="measure {}".format(i),
-    #     color="gray",
-    #     markersize=0.5,
-    #     linewidth=0.8,
-    # )
+    # axes.plot(df_mean, "o", label="mean", color="green", linewidth=0.3, markersize=0.3)
 
-    # df_std2 = pd.concat(data).groupby("index").std()
+    result_dfs = [df_mean.tail(1), df_std.tail(1)]
 
-    axes.plot(df_mean, "o", label="mean", color="green", linewidth=0.3, markersize=0.3)
+    for i, datum in enumerate(data):
+        result_dfs.insert(0, (datum.tail(1)))
 
-    axes.legend()
+    result_concat = pd.concat(result_dfs, ignore_index=True)
+
+    result_concat["name"] = ""
+    result_concat["name"][5] = "mean"
+    result_concat["name"][6] = "standard deviation"
+
+    result_concat.index.name = "index"
+
+    result_concat = result_concat.drop("time", axis=1)
+
+    result_concat.to_csv(
+        "{}/{}.csv".format(output_directory, output_filename),
+        columns=["name", "dE76", "dE94", "delta_e_2000", "dL", "da", "db"],
+    )
+
+    # axes.legend()
     figure.savefig("{}/{}.png".format(output_directory, output_filename), dpi=1200)
 
 
