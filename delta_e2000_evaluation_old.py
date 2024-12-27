@@ -34,7 +34,18 @@ for file in files:
         skiprows=3,
         header=0,
         names=["time", "L", "a", "b", "dE76", "dE94", "delta_e_2000", "dL", "da", "db"],
-        usecols=["time", "dE76", "dE94", "delta_e_2000", "dL", "da", "db"],
+        usecols=[
+            "time",
+            "L",
+            "a",
+            "b",
+            "dE76",
+            "dE94",
+            "delta_e_2000",
+            "dL",
+            "da",
+            "db",
+        ],
     )
     df.index.name = "index"
     dataframes.append(df)
@@ -93,6 +104,23 @@ def plot_delta_e_2000(data: list[pd.DataFrame], output_filename: str) -> None:
 
     # axes.legend()
     figure.savefig("{}/{}.png".format(output_directory, output_filename), dpi=1200)
+
+    figure.clf()
+
+    axes2 = figure.subplots()
+    axes2.set_ylabel("b*")
+    axes2.set_xlabel("a*")
+    axes2.set_title("a*b* values")
+    axes2.plot(
+        df_mean["a"],
+        df_mean["b"],
+        "o",
+        markersize=0.4,
+        linewidth=0.4,
+        color="green",
+    )
+
+    figure.savefig("{}/{}.png".format(output_directory, "test"), dpi=1200)
 
 
 plot_delta_e_2000(dataframes, "delta_e_2000_01")
