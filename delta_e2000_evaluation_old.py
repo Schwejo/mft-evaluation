@@ -12,7 +12,7 @@ output_directory = "output"
 # make sure the directory exists
 makedirs(output_directory, exist_ok=True)
 
-data_directory = "data/HF_GA_AUP"
+data_directory = "data/HF_Box1/HF_GA_AUP"
 
 # match any .txt file
 filename_pattern = "*.txt"
