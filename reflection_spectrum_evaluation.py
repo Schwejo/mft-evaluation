@@ -3,11 +3,10 @@ import matplotlib.pyplot as plot
 from pathlib import Path
 
 
-def plot_first_and_last_measurement(data: pd.DataFrame, output: Path) -> None:
-    figure = plot.figure()
-    axes = figure.subplots()
+def plot_first_and_last_measurement(data: pd.DataFrame, axes, title: str) -> None:
+    axes.set_title(title)
     axes.set_ylabel("Reflectance [%]")
-    axes.set_ylim(0, 80)
+    axes.set_ylim(0, 100)
     axes.set_xlabel("Wavelength [nm]")
     axes.set_xlim(420, 720)
     axes.grid(alpha=0.5)
@@ -24,10 +23,10 @@ def plot_first_and_last_measurement(data: pd.DataFrame, output: Path) -> None:
         linewidth=0.8,
     )
     axes.legend()
-    figure.savefig(output, dpi=1200)
+    # figure.savefig(output, dpi=1200)
 
 
-def evaluate_reflection_spectrum(files: list[Path], output: Path):
+def evaluate_reflection_spectrum(files: list[Path]):
     # list that holds a dataframe for each measurement file
     dataframes = []
 
@@ -66,6 +65,8 @@ def evaluate_reflection_spectrum(files: list[Path], output: Path):
     # 2: Group by index column (wavelength) to restore index integrity.
     # 3: Calculate mean over all columns except the one grouped by.
     df_mean = pd.concat(dataframes_stripped).groupby("wavelength").mean()
+
+    return df_mean
 
     plot_first_and_last_measurement(
         dataframes[0], output.joinpath("{}_single.png".format(files[0].stem))

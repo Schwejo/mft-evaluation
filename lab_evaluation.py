@@ -1,0 +1,217 @@
+from glob import glob
+import pandas as pd
+import matplotlib.pyplot as plot
+from pathlib import Path
+from os import makedirs, listdir
+import re
+import numpy as np
+
+# directory to put generated files in
+output_directory = "output"
+
+# make sure the directory exists
+makedirs(output_directory, exist_ok=True)
+
+data_directory = "data/MF_Box2/MF_GA_AQP/"
+
+# match any .txt file
+filename_pattern = "*.txt"
+
+files = sorted(glob("{}/{}".format(data_directory, filename_pattern)))
+
+# match every string that does NOT include "spect"
+filename_regex = re.compile("^((?!spect).)*$")
+
+files = [i for i in files if filename_regex.match(i)]
+
+
+def plot_lab(df: pd.DataFrame, l_axis, ab_axis, title: str):
+    df = df.drop(df.tail(1).index)
+
+    l_axis.set_ylabel("L*")
+    l_axis.set_xlabel("Time")
+    l_axis.set_title(title)
+    l_axis.plot(
+        df["L"],
+        "o",
+        markersize=0.4,
+        linewidth=0.4,
+        color="blue",
+    )
+
+    l_axis.grid(True, alpha=0.4)
+
+    ab_axis.set_ylabel("b*")
+    ab_axis.set_xlabel("a*")
+    ab_axis.set_title(title)
+    ab_axis.plot(
+        df["a"],
+        df["b"],
+        "o",
+        markersize=0.4,
+        linewidth=0.4,
+        color="blue",
+    )
+
+    ab_axis = plot.axes()
+
+    head = df.head(1)
+    tail = df.tail(1)
+    # print(first_and_last)
+
+    ab_axis.scatter(
+        head["a"], head["b"], marker="X", c="green", alpha=0.7, label="Start"
+    )
+    ab_axis.scatter(tail["a"], tail["b"], marker="s", c="red", alpha=0.5, label="End")
+
+    ab_axis.grid(True, alpha=0.4)
+    ab_axis.legend()
+
+
+def plot_delta_e_2000(files: list[Path], should_return_mean_df: bool) -> None:
+    # list that holds a dataframe for each measurement file
+    dataframes = []
+
+    for file in files:
+        df = pd.read_csv(
+            file,
+            sep="\t",
+            skiprows=3,
+            header=0,
+            names=[
+                "time",
+                "L",
+                "a",
+                "b",
+                "dE76",
+                "dE94",
+                "delta_e_2000",
+                "dL",
+                "da",
+                "db",
+            ],
+            usecols=[
+                "time",
+                "L",
+                "a",
+                "b",
+                "dE76",
+                "dE94",
+                "delta_e_2000",
+                "dL",
+                "da",
+                "db",
+            ],
+        )
+        df.index.name = "index"
+        dataframes.append(df)
+
+    figure = plot.figure()
+    axes = figure.subplots()
+    # axes.set_ylabel("Reflectance [%]")
+    # axes.set_ylim(0, 80)
+    # axes.set_xlabel("Wavelength [nm]")
+    # axes.set_xlim(420, 720)
+    axes.grid(alpha=0.5)
+
+    # linespace to evaluate function at 1000 points between 0 and 300
+    x_new = np.linspace(0, 300, 1000)
+
+    df_mean = pd.concat(dataframes).groupby("index").mean().set_index("time")
+    df_std = pd.concat(dataframes).groupby("index").std()
+
+    if should_return_mean_df:
+        return df_mean
+
+    # generate function from data
+    z = np.polyfit(df_mean.index.to_list(), df_mean["delta_e_2000"], 16)
+    f = np.poly1d(z)
+
+    y_new = f(x_new)
+
+    # dirty
+    y_new[0] = 0
+
+    df = pd.DataFrame(y_new, x_new, columns=["delta_e_2000"])
+    df.index.name = "time"
+
+    axes.plot(x_new, y_new, linewidth=0.4, color="black")
+
+    # axes.plot(df_mean, "o", label="mean", color="green", linewidth=0.3, markersize=0.3)
+
+    result_dfs = [df_mean.tail(1), df_std.tail(1)]
+
+    for i, datum in enumerate(dataframes):
+        result_dfs.insert(0, (datum.tail(1)))
+
+    result_concat = pd.concat(result_dfs, ignore_index=True)
+
+    # result_concat["name"] = ""
+    # result_concat["name"][5] = "mean"
+    # result_concat["name"][6] = "standard deviation"
+
+    result_concat.index.name = "index"
+
+    result_concat = result_concat.drop("time", axis=1)
+
+    # result_concat.to_csv(
+    #     "{}/{}.csv".format(output_directory, output_filename),
+    #     columns=["name", "dE76", "dE94", "delta_e_2000", "dL", "da", "db"],
+    # )
+
+    # axes.legend()
+    # figure.savefig("{}/{}.png".format(output_directory, output_filename), dpi=1200)
+
+    lab_end_mean_values = df_mean.tail(2)[["db", "da", "dL"]].values[0]
+    lab_end_std_values = df_std.tail(2)[["db", "da", "dL"]].values[0]
+
+    return (lab_end_mean_values, lab_end_std_values), df_mean
+
+    # figure.savefig("{}/{}.png".format(output_directory, "dLab"), dpi=1200)
+
+
+# plot_delta_e_2000(dataframes, "delta_e_2000_01")
+
+
+def plot_delta_lab_bar_chart(data: tuple[str, tuple[list, list]], axes):
+    colors = ["" for _ in range(3)]
+
+    for index, value in enumerate(data[1][0]):
+        if value < 0:
+            if index == 0:
+                colors[0] = "#565656"
+            if index == 1:
+                colors[1] = "#4dd72f"
+            if index == 2:
+                colors[2] = "#1a71e3"
+        else:
+            if index == 0:
+                colors[0] = "#aeaeae"
+            if index == 1:
+                colors[1] = "#e3371a"
+            if index == 2:
+                colors[2] = "#e3c81a"
+
+    colors.reverse()
+
+    axes.set_title(data[0])
+    axes.yaxis.set_ticks([0, 1, 2], ["db", "da", "dL"])
+    axes.barh(
+        [0, 1, 2],
+        data[1][0],
+        height=1,
+        color=colors,
+    )
+
+    axes.errorbar(
+        data[1][0],
+        [0, 1, 2],
+        xerr=data[1][1],
+        fmt=",",
+        color="black",
+        capsize=10,
+        elinewidth=1,
+    )
+
+
+plot_delta_e_2000(files, False)
