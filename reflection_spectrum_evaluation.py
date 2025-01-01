@@ -1,15 +1,19 @@
 import pandas as pd
+import matplotlib.axes as axes
 import matplotlib.pyplot as plot
 from pathlib import Path
 
+from plot_util import add_grid
 
-def plot_first_and_last_measurement(data: pd.DataFrame, axes, title: str) -> None:
+
+def plot_first_and_last_measurement(
+    data: pd.DataFrame, axes: axes.Axes, title: str
+) -> None:
     axes.set_title(title)
     axes.set_ylabel("Reflectance [%]")
     axes.set_ylim(0, 100)
     axes.set_xlabel("Wavelength [nm]")
     axes.set_xlim(420, 720)
-    axes.grid(alpha=0.5)
     axes.plot(
         data["first_measurement_normalized"],
         label="First Measurement",
@@ -23,10 +27,10 @@ def plot_first_and_last_measurement(data: pd.DataFrame, axes, title: str) -> Non
         linewidth=0.8,
     )
     axes.legend()
-    # figure.savefig(output, dpi=1200)
+    add_grid(axes)
 
 
-def evaluate_reflection_spectrum(files: list[Path]):
+def evaluate_reflection_spectrum(files: list[Path]) -> pd.DataFrame:
     # list that holds a dataframe for each measurement file
     dataframes = []
 

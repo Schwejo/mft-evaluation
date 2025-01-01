@@ -1,50 +1,35 @@
 from glob import glob
-import pandas as pd
-import matplotlib.pyplot as plot
 from pathlib import Path
-from os import makedirs, listdir
+import pandas as pd
+import matplotlib.axes as axes
+import matplotlib.pyplot as plot
 import re
 import numpy as np
 
-# directory to put generated files in
-output_directory = "output"
-
-# make sure the directory exists
-makedirs(output_directory, exist_ok=True)
-
-data_directory = "data/MF_Box2/MF_GA_AQP/"
-
-# match any .txt file
-filename_pattern = "*.txt"
-
-files = sorted(glob("{}/{}".format(data_directory, filename_pattern)))
-
-# match every string that does NOT include "spect"
-filename_regex = re.compile("^((?!spect).)*$")
-
-files = [i for i in files if filename_regex.match(i)]
+from plot_util import add_grid
 
 
-def plot_lab(df: pd.DataFrame, l_axis, ab_axis, title: str):
+def plot_lab(
+    df: pd.DataFrame, l_axes: axes.Axes, ab_axes: axes.Axes, title: str
+) -> None:
     df = df.drop(df.tail(1).index)
 
-    l_axis.set_ylabel("L*")
-    l_axis.set_xlabel("Time")
-    l_axis.set_title(title)
-    l_axis.plot(
+    l_axes.set_ylabel("L*")
+    l_axes.set_xlabel("Time")
+    l_axes.set_title(title)
+    l_axes.plot(
         df["L"],
         "o",
         markersize=0.4,
         linewidth=0.4,
         color="blue",
     )
+    add_grid(l_axes)
 
-    l_axis.grid(True, alpha=0.4)
-
-    ab_axis.set_ylabel("b*")
-    ab_axis.set_xlabel("a*")
-    ab_axis.set_title(title)
-    ab_axis.plot(
+    ab_axes.set_ylabel("b*")
+    ab_axes.set_xlabel("a*")
+    ab_axes.set_title(title)
+    ab_axes.plot(
         df["a"],
         df["b"],
         "o",
@@ -52,23 +37,20 @@ def plot_lab(df: pd.DataFrame, l_axis, ab_axis, title: str):
         linewidth=0.4,
         color="blue",
     )
-
-    ab_axis = plot.axes()
+    add_grid(ab_axes)
 
     head = df.head(1)
     tail = df.tail(1)
     # print(first_and_last)
 
-    ab_axis.scatter(
+    ab_axes.scatter(
         head["a"], head["b"], marker="X", c="green", alpha=0.7, label="Start"
     )
-    ab_axis.scatter(tail["a"], tail["b"], marker="s", c="red", alpha=0.5, label="End")
-
-    ab_axis.grid(True, alpha=0.4)
-    ab_axis.legend()
+    ab_axes.scatter(tail["a"], tail["b"], marker="s", c="red", alpha=0.5, label="End")
+    ab_axes.legend()
 
 
-def plot_delta_e_2000(files: list[Path], should_return_mean_df: bool) -> None:
+def plot_delta_e_2000(files: list[Path]):
     # list that holds a dataframe for each measurement file
     dataframes = []
 
@@ -120,9 +102,6 @@ def plot_delta_e_2000(files: list[Path], should_return_mean_df: bool) -> None:
     df_mean = pd.concat(dataframes).groupby("index").mean().set_index("time")
     df_std = pd.concat(dataframes).groupby("index").std()
 
-    if should_return_mean_df:
-        return df_mean
-
     # generate function from data
     z = np.polyfit(df_mean.index.to_list(), df_mean["delta_e_2000"], 16)
     f = np.poly1d(z)
@@ -173,7 +152,7 @@ def plot_delta_e_2000(files: list[Path], should_return_mean_df: bool) -> None:
 # plot_delta_e_2000(dataframes, "delta_e_2000_01")
 
 
-def plot_delta_lab_bar_chart(data: tuple[str, tuple[list, list]], axes):
+def plot_delta_lab_bar_chart(data: tuple[str, tuple[list, list]], axes: axes.Axes):
     colors = ["" for _ in range(3)]
 
     for index, value in enumerate(data[1][0]):
@@ -214,4 +193,18 @@ def plot_delta_lab_bar_chart(data: tuple[str, tuple[list, list]], axes):
     )
 
 
-plot_delta_e_2000(files, False)
+# only execute if this script is called directly
+if __name__ == "__main__":
+    data_directory = "data/MF_Box2/MF_GA_AQP/"
+
+    # match any .txt file
+    filename_pattern = "*.txt"
+
+    files = sorted(glob("{}/{}".format(data_directory, filename_pattern)))
+
+    # match every string that does NOT include "spect"
+    filename_regex = re.compile("^((?!spect).)*$")
+
+    files = [i for i in files if filename_regex.match(i)]
+
+    plot_delta_e_2000(files, False)

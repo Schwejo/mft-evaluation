@@ -1,93 +1,91 @@
 from glob import glob
-import itertools
-import os
-import matplotlib.pyplot as plot
-import pandas as pd
+from os import makedirs, listdir
 from pathlib import Path
-import re
+from itertools import groupby
+from pandas import DataFrame
+from matplotlib.pyplot import figure
+from re import compile
+import time
+
 from reflection_spectrum_evaluation import (
     evaluate_reflection_spectrum,
     plot_first_and_last_measurement,
 )
 from lab_evaluation import plot_delta_e_2000, plot_delta_lab_bar_chart, plot_lab
-import time
+from plot_util import init_figure
 
 start = time.time()
 
-output_path = Path("output/new5")
+output_path = Path("output/new6")
+
+# make sure the output directory exists
+makedirs(output_path, exist_ok=True)
 
 data_path = Path("data")
 
 # one directory per type of measurement setting
-subdirs = sorted(os.listdir(data_path))
+subdirs = sorted(listdir(data_path))
 
 # match any string including "spect_convert.txt"
-spect_regex = re.compile(".*spect_convert\.txt$")
+spect_regex = compile(".*spect_convert\.txt$")
 
 # match any string NOT including "spect"
-not_spect_regex = re.compile("^((?!spect).)*$")
+not_spect_regex = compile("^((?!spect).)*$")
 
-figure = plot.figure(figsize=[10, 10], dpi=500)
+# reuse one figure for all plots
+fig = figure(figsize=[10, 10], dpi=500)
 
 
 def plot_overview(
-    reflection_spectrum_data: list[tuple[str, pd.DataFrame]],
+    reflection_spectrum_data: list[tuple[str, DataFrame]],
     delta_lab_data: list[tuple[str, tuple[list, list]]],
 ):
-    figure.clear()
-    figure.set_layout_engine("constrained")
-
-    gs = figure.add_gridspec(3, 2, wspace=0.1, hspace=0.2)
+    gs = init_figure(fig, 3, 2)
 
     for i, datum in enumerate(delta_lab_data):
-        plot_delta_lab_bar_chart(datum, figure.add_subplot(gs[i, 0]))
+        plot_delta_lab_bar_chart(datum, fig.add_subplot(gs[i, 0]))
 
     for i, datum in enumerate(reflection_spectrum_data):
-        plot_first_and_last_measurement(
-            datum[1], figure.add_subplot(gs[i, 1]), datum[0]
-        )
+        plot_first_and_last_measurement(datum[1], fig.add_subplot(gs[i, 1]), datum[0])
 
-    figure.savefig(
+    fig.savefig(
         output_path.joinpath("{}_3.png".format(reflection_spectrum_data[0][0][3:]))
     )
 
 
-def plot_lab_values_overview(lab_means: list[tuple[str, pd.DataFrame]]):
-    figure.clear()
-    figure.set_layout_engine("constrained")
-
-    gs = figure.add_gridspec(3, 2, wspace=0.1, hspace=0.2)
+def plot_lab_values_overview(lab_means: list[tuple[str, DataFrame]]):
+    gs = init_figure(fig, 3, 2)
 
     for i, datum in enumerate(lab_means):
         plot_lab(
             datum[1],
-            figure.add_subplot(gs[i, 0]),
-            figure.add_subplot(gs[i, 1]),
+            fig.add_subplot(gs[i, 0]),
+            fig.add_subplot(gs[i, 1]),
             datum[0],
         )
 
-    figure.savefig(output_path.joinpath("{}_2.png".format(lab_means[0][0][3:])))
+    fig.savefig(output_path.joinpath("{}_2.png".format(lab_means[0][0][3:])))
 
 
-for sample_folder in sorted(os.listdir(data_path.joinpath(subdirs[0]))):
+for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
     # related sample_folders (and files) share their name except for the first letter
     all_sample_files = sorted(
         glob("data/**/*{}*.txt".format(sample_folder[1:]), recursive=True)
     )
 
     # tuple (sample identifier, dataframe)
-    reflection_spectrum_means: list[tuple[str, pd.DataFrame]] = []
+    reflection_spectrum_means: list[tuple[str, DataFrame]] = []
 
     # tuple (sample identifier, tuple (means, standard deviation))
     delta_labs: list[tuple[str, tuple[list, list]]] = []
 
-    lab_means: list[tuple[str, pd.DataFrame]] = []
+    # tuple (sample identifier, dataframe)
+    lab_means: list[tuple[str, DataFrame]] = []
 
-    for key, files in itertools.groupby(all_sample_files, lambda x: Path(x).parts[-2]):
+    # Group by folder name and iterate over each group. 'files' hold all file names in the current folder.
+    for folder, files in groupby(all_sample_files, lambda x: Path(x).parts[-2]):
         spect_convert_files: list[Path] = []
         not_spect_files: list[Path] = []
-
-        filename = key
 
         for file in files:
             file = Path(file)
@@ -99,16 +97,16 @@ for sample_folder in sorted(os.listdir(data_path.joinpath(subdirs[0]))):
 
         reflection_spectrum_means.append(
             (
-                key,
+                folder,
                 evaluate_reflection_spectrum(spect_convert_files),
             )
         )
 
-        labs, lab_mean = plot_delta_e_2000(not_spect_files, False)
+        labs, lab_mean = plot_delta_e_2000(not_spect_files)
 
-        lab_means.append((key, lab_mean))
+        lab_means.append((folder, lab_mean))
 
-        delta_labs.append((key, labs))
+        delta_labs.append((folder, labs))
 
     plot_overview(reflection_spectrum_means, delta_labs)
     plot_lab_values_overview(lab_means)
