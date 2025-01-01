@@ -88,13 +88,13 @@ def plot_delta_e_2000(files: list[Path]):
         df.index.name = "index"
         dataframes.append(df)
 
-    figure = plot.figure()
-    axes = figure.subplots()
+    # figure = plot.figure()
+    # axes = figure.subplots()
     # axes.set_ylabel("Reflectance [%]")
     # axes.set_ylim(0, 80)
     # axes.set_xlabel("Wavelength [nm]")
     # axes.set_xlim(420, 720)
-    axes.grid(alpha=0.5)
+    # axes.grid(alpha=0.5)
 
     # linespace to evaluate function at 1000 points between 0 and 300
     x_new = np.linspace(0, 300, 1000)
@@ -114,7 +114,7 @@ def plot_delta_e_2000(files: list[Path]):
     df = pd.DataFrame(y_new, x_new, columns=["delta_e_2000"])
     df.index.name = "time"
 
-    axes.plot(x_new, y_new, linewidth=0.4, color="black")
+    # axes.plot(x_new, y_new, linewidth=0.4, color="black")
 
     # axes.plot(df_mean, "o", label="mean", color="green", linewidth=0.3, markersize=0.3)
 
@@ -145,11 +145,6 @@ def plot_delta_e_2000(files: list[Path]):
     lab_end_std_values = df_std.tail(2)[["db", "da", "dL"]].values[0]
 
     return (lab_end_mean_values, lab_end_std_values), df_mean
-
-    # figure.savefig("{}/{}.png".format(output_directory, "dLab"), dpi=1200)
-
-
-# plot_delta_e_2000(dataframes, "delta_e_2000_01")
 
 
 def plot_delta_lab_bar_chart(data: tuple[str, tuple[list, list]], axes: axes.Axes):
