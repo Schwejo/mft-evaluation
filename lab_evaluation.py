@@ -50,6 +50,20 @@ def plot_lab(
     ab_axes.legend()
 
 
+def plot_overview_table(df: pd.DataFrame, axes: axes.Axes, title: str):
+    axes.table(
+        df.values,
+        colLabels=df.columns,
+        rowLabels=["1", "2", "3", "4", "5", "mean", "std"],
+        colColours=["lightgray"] * len(df.columns),
+        rowColours=["lightgray"] * len(df),
+        loc="best",
+    )
+    axes.set_title(title)
+    axes.axis("off")
+    axes.axis("tight")
+
+
 def plot_delta_e_2000(files: list[Path]):
     # list that holds a dataframe for each measurement file
     dataframes = []
@@ -118,10 +132,10 @@ def plot_delta_e_2000(files: list[Path]):
 
     # axes.plot(df_mean, "o", label="mean", color="green", linewidth=0.3, markersize=0.3)
 
-    result_dfs = [df_mean.tail(1), df_std.tail(1)]
+    result_dfs = [df_mean.tail(1).round(3), df_std.tail(1).round(3)]
 
     for i, datum in enumerate(dataframes):
-        result_dfs.insert(0, (datum.tail(1)))
+        result_dfs.insert(0, (datum.tail(1).round(3)))
 
     result_concat = pd.concat(result_dfs, ignore_index=True)
 
@@ -139,12 +153,11 @@ def plot_delta_e_2000(files: list[Path]):
     # )
 
     # axes.legend()
-    # figure.savefig("{}/{}.png".format(output_directory, output_filename), dpi=1200)
 
     lab_end_mean_values = df_mean.tail(2)[["db", "da", "dL"]].values[0]
     lab_end_std_values = df_std.tail(2)[["db", "da", "dL"]].values[0]
 
-    return (lab_end_mean_values, lab_end_std_values), df_mean
+    return (lab_end_mean_values, lab_end_std_values), df_mean, result_concat
 
 
 def plot_delta_lab_bar_chart(data: tuple[str, tuple[list, list]], axes: axes.Axes):
@@ -202,4 +215,4 @@ if __name__ == "__main__":
 
     files = [i for i in files if filename_regex.match(i)]
 
-    plot_delta_e_2000(files, False)
+    plot_delta_e_2000(files)
