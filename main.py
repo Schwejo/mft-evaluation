@@ -16,12 +16,13 @@ from lab_evaluation import (
     plot_delta_lab_bar_chart,
     plot_lab,
     plot_overview_table,
+    plot_curve_fit_delta_e,
 )
 from plot_util import init_figure
 
 start = time.time()
 
-output_path = Path("output/new7")
+output_path = Path("output/new8")
 
 # make sure the output directory exists
 makedirs(output_path, exist_ok=True)
@@ -87,6 +88,19 @@ def plot_lab_values_overview(lab_means: list[tuple[str, DataFrame]]):
     fig.savefig(output_path.joinpath("{}_2.png".format(lab_means[0][0][3:])))
 
 
+def plot_curve_fit_delta_e_overview(
+    curve_fit_delta_e_dfs: list[tuple[str, DataFrame]],
+    lab_means: list[tuple[str, DataFrame]],
+):
+    gs = init_figure(fig)
+
+    plot_curve_fit_delta_e(curve_fit_delta_e_dfs, lab_means, fig.add_subplot(gs[0]))
+
+    fig.savefig(
+        output_path.joinpath("{}_1_1.png".format(curve_fit_delta_e_dfs[0][0][3:]))
+    )
+
+
 for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
     # related sample_folders (and files) share their name except for the first letter
     all_sample_files = sorted(
@@ -103,6 +117,8 @@ for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
     lab_means: list[tuple[str, DataFrame]] = []
 
     overview_table_data: list[tuple[str, DataFrame]] = []
+
+    curve_fit_dfs: list[tuple[str, DataFrame]] = []
 
     # Group by folder name and iterate over each group. 'files' hold all file names in the current folder.
     for folder, files in groupby(all_sample_files, lambda x: Path(x).parts[-2]):
@@ -124,17 +140,22 @@ for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
             )
         )
 
-        labs, lab_mean, overview_table_df = plot_delta_e_2000(not_spect_files)
+        labs, lab_mean, overview_table_df, curve_fit_delta_e_df = plot_delta_e_2000(
+            not_spect_files
+        )
 
         lab_means.append((folder, lab_mean))
 
         overview_table_data.append((folder, overview_table_df))
 
+        curve_fit_dfs.append((folder, curve_fit_delta_e_df))
+
         delta_labs.append((folder, labs))
 
-    # plot_overview(reflection_spectrum_means, delta_labs)
-    # plot_lab_values_overview(lab_means)
+    plot_overview(reflection_spectrum_means, delta_labs)
+    plot_lab_values_overview(lab_means)
     plot_overview_table_overview(overview_table_data)
+    plot_curve_fit_delta_e_overview(curve_fit_dfs, lab_means)
 
 
 print("done", time.time() - start)

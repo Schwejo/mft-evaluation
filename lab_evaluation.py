@@ -64,12 +64,42 @@ def plot_overview_table(df: pd.DataFrame, axes: axes.Axes, title: str):
     axes.axis("tight")
 
 
+def plot_curve_fit_delta_e(
+    data: list[tuple[str, pd.DataFrame]],
+    means: list[tuple[str, pd.DataFrame]],
+    axes: axes.Axes,
+):
+    colors = ["#1a71e3", "#4dd72f", "#e3371a"]
+
+    for i, (title, df) in enumerate(data):
+        axes.plot(
+            df,
+            linewidth=1,
+            color=colors[i],
+            label=title,
+        )
+
+    for i, (title, df) in enumerate(means):
+        axes.plot(
+            df["delta_e_2000"],
+            "o",
+            color=colors[i],
+            markersize=1.2,
+            label=title,
+        )
+
+    axes.legend()
+    add_grid(axes)
+    axes.set_xlabel("time [s]")
+    axes.set_ylabel("dE00")
+
+
 def plot_delta_e_2000(files: list[Path]):
     # list that holds a dataframe for each measurement file
     dataframes = []
 
     for file in files:
-        df = pd.read_csv(
+        curve_fit_delta_e_df = pd.read_csv(
             file,
             sep="\t",
             skiprows=3,
@@ -99,8 +129,8 @@ def plot_delta_e_2000(files: list[Path]):
                 "db",
             ],
         )
-        df.index.name = "index"
-        dataframes.append(df)
+        curve_fit_delta_e_df.index.name = "index"
+        dataframes.append(curve_fit_delta_e_df)
 
     # figure = plot.figure()
     # axes = figure.subplots()
@@ -125,10 +155,8 @@ def plot_delta_e_2000(files: list[Path]):
     # dirty
     y_new[0] = 0
 
-    df = pd.DataFrame(y_new, x_new, columns=["delta_e_2000"])
-    df.index.name = "time"
-
-    # axes.plot(x_new, y_new, linewidth=0.4, color="black")
+    curve_fit_delta_e_df = pd.DataFrame(y_new, x_new, columns=["dE00"])
+    curve_fit_delta_e_df.index.name = "time"
 
     # axes.plot(df_mean, "o", label="mean", color="green", linewidth=0.3, markersize=0.3)
 
@@ -157,7 +185,12 @@ def plot_delta_e_2000(files: list[Path]):
     lab_end_mean_values = df_mean.tail(2)[["db", "da", "dL"]].values[0]
     lab_end_std_values = df_std.tail(2)[["db", "da", "dL"]].values[0]
 
-    return (lab_end_mean_values, lab_end_std_values), df_mean, result_concat
+    return (
+        (lab_end_mean_values, lab_end_std_values),
+        df_mean,
+        result_concat,
+        curve_fit_delta_e_df,
+    )
 
 
 def plot_delta_lab_bar_chart(data: tuple[str, tuple[list, list]], axes: axes.Axes):
