@@ -33,7 +33,7 @@ data_path = Path("data")
 subdirs = sorted(listdir(data_path))
 
 # match any string including "spect_convert.txt"
-spect_regex = compile(".*spect_convert\.txt$")
+spect_regex = compile(".*spect_convert.txt$")
 
 # match any string NOT including "spect"
 not_spect_regex = compile("^((?!spect).)*$")
@@ -48,8 +48,26 @@ def plot_overview(
 ):
     gs = init_figure(fig, 3, 2)
 
+    val_min_dev_array = []
+    val_pl_dev_array = []
+
+    for i in range(0,3):
+        for j in range(0,3):
+            val_min_dev_array.append(delta_lab_data[i][1][0][j] - delta_lab_data[i][1][1][j])
+            val_pl_dev_array.append(delta_lab_data[i][1][0][j] + delta_lab_data[i][1][1][j])
+
+    if min(val_min_dev_array) < 0 and max(val_pl_dev_array) < 0:
+        x_lim_max = 0.1
+        x_lim_min = min(val_min_dev_array) * 1.1
+    elif min(val_min_dev_array) > 0 and max(val_pl_dev_array) > 0:
+        x_lim_min = -0.1
+        x_lim_max = max(val_pl_dev_array) * 1.1
+    else:
+        x_lim_min = min(val_min_dev_array) * 1.1
+        x_lim_max = max(val_pl_dev_array) * 1.1
+
     for i, datum in enumerate(delta_lab_data):
-        plot_delta_lab_bar_chart(datum, fig.add_subplot(gs[i, 0]))
+        plot_delta_lab_bar_chart(datum, fig.add_subplot(gs[i, 0]), x_lim_min, x_lim_max)
 
     for i, datum in enumerate(reflection_spectrum_data):
         plot_first_and_last_measurement(datum[1], fig.add_subplot(gs[i, 1]), datum[0])
@@ -91,10 +109,11 @@ def plot_lab_values_overview(lab_means: list[tuple[str, DataFrame]]):
 def plot_curve_fit_delta_e_overview(
     curve_fit_delta_e_dfs: list[tuple[str, DataFrame]],
     lab_means: list[tuple[str, DataFrame]],
+    lab_stds: list[tuple[str, DataFrame]],
 ):
     gs = init_figure(fig)
 
-    plot_curve_fit_delta_e(curve_fit_delta_e_dfs, lab_means, fig.add_subplot(gs[0]))
+    plot_curve_fit_delta_e(curve_fit_delta_e_dfs, lab_means, lab_stds, fig.add_subplot(gs[0]))
 
     fig.savefig(
         output_path.joinpath("{}_1_1.png".format(curve_fit_delta_e_dfs[0][0][3:]))
@@ -115,6 +134,7 @@ for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
 
     # tuple (sample identifier, dataframe)
     lab_means: list[tuple[str, DataFrame]] = []
+    lab_stds: list[tuple[str, DataFrame]] = []
 
     overview_table_data: list[tuple[str, DataFrame]] = []
 
@@ -140,11 +160,12 @@ for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
             )
         )
 
-        labs, lab_mean, overview_table_df, curve_fit_delta_e_df = plot_delta_e_2000(
+        labs, lab_mean, lab_std, overview_table_df, curve_fit_delta_e_df = plot_delta_e_2000(
             not_spect_files
         )
 
         lab_means.append((folder, lab_mean))
+        lab_stds.append((folder, lab_std))
 
         overview_table_data.append((folder, overview_table_df))
 
@@ -155,7 +176,7 @@ for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
     plot_overview(reflection_spectrum_means, delta_labs)
     plot_lab_values_overview(lab_means)
     plot_overview_table_overview(overview_table_data)
-    plot_curve_fit_delta_e_overview(curve_fit_dfs, lab_means)
+    plot_curve_fit_delta_e_overview(curve_fit_dfs, lab_means, lab_stds)
 
 
 print("done", time.time() - start)
