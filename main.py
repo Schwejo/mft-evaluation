@@ -22,7 +22,7 @@ from plot_util import init_figure
 
 start = time.time()
 
-output_path = Path("output/new8")
+output_path = Path("output/new9")
 
 # make sure the output directory exists
 makedirs(output_path, exist_ok=True)
@@ -51,10 +51,14 @@ def plot_overview(
     val_min_dev_array = []
     val_pl_dev_array = []
 
-    for i in range(0,3):
-        for j in range(0,3):
-            val_min_dev_array.append(delta_lab_data[i][1][0][j] - delta_lab_data[i][1][1][j])
-            val_pl_dev_array.append(delta_lab_data[i][1][0][j] + delta_lab_data[i][1][1][j])
+    for i in range(0, 3):
+        for j in range(0, 3):
+            val_min_dev_array.append(
+                delta_lab_data[i][1][0][j] - delta_lab_data[i][1][1][j]
+            )
+            val_pl_dev_array.append(
+                delta_lab_data[i][1][0][j] + delta_lab_data[i][1][1][j]
+            )
 
     if min(val_min_dev_array) < 0 and max(val_pl_dev_array) < 0:
         x_lim_max = 0.1
@@ -73,7 +77,7 @@ def plot_overview(
         plot_first_and_last_measurement(datum[1], fig.add_subplot(gs[i, 1]), datum[0])
 
     fig.savefig(
-        output_path.joinpath("{}_3.png".format(reflection_spectrum_data[0][0][3:]))
+        output_path.joinpath("{}_3.png".format(reflection_spectrum_data[0][0][2:]))
     )
 
 
@@ -83,10 +87,10 @@ def plot_overview_table_overview(overview_table_data: list[tuple[str, DataFrame]
     for i, datum in enumerate(overview_table_data):
         plot_overview_table(datum[1], fig.add_subplot(gs[i]), datum[0])
 
-    fig.savefig(output_path.joinpath("{}_1.png".format(overview_table_data[0][0][3:])))
+    fig.savefig(output_path.joinpath("{}_1.png".format(overview_table_data[0][0][2:])))
 
     concat(map(lambda x: x[1], overview_table_data)).to_csv(
-        output_path.joinpath("{}_1.csv".format(overview_table_data[0][0][3:])),
+        output_path.joinpath("{}_1.csv".format(overview_table_data[0][0][2:])),
         columns=["dE76", "dE94", "delta_e_2000", "dL", "da", "db", "L", "a", "b"],
         header=["dE76", "dE94", "dE00", "dL", "da", "db", "L", "a", "b"],
     )
@@ -103,7 +107,7 @@ def plot_lab_values_overview(lab_means: list[tuple[str, DataFrame]]):
             datum[0],
         )
 
-    fig.savefig(output_path.joinpath("{}_2.png".format(lab_means[0][0][3:])))
+    fig.savefig(output_path.joinpath("{}_2.png".format(lab_means[0][0][2:])))
 
 
 def plot_curve_fit_delta_e_overview(
@@ -113,17 +117,24 @@ def plot_curve_fit_delta_e_overview(
 ):
     gs = init_figure(fig)
 
-    plot_curve_fit_delta_e(curve_fit_delta_e_dfs, lab_means, lab_stds, fig.add_subplot(gs[0]))
+    plot_curve_fit_delta_e(
+        curve_fit_delta_e_dfs, lab_means, lab_stds, fig.add_subplot(gs[0])
+    )
 
     fig.savefig(
-        output_path.joinpath("{}_1_1.png".format(curve_fit_delta_e_dfs[0][0][3:]))
+        output_path.joinpath("{}_1_1.png".format(curve_fit_delta_e_dfs[0][0][2:]))
     )
 
 
 for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
     # related sample_folders (and files) share their name except for the first letter
     all_sample_files = sorted(
-        glob("data/**/*{}*.txt".format(sample_folder[1:]), recursive=True)
+        glob("data/**/*{}*.txt".format(sample_folder[1:]), recursive=True),
+        key=lambda filename: (
+            "A"
+            if filename.startswith("data/H")
+            else "B" if filename.startswith("data/M") else "C"
+        ),
     )
 
     # tuple (sample identifier, dataframe)
@@ -160,8 +171,8 @@ for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
             )
         )
 
-        labs, lab_mean, lab_std, overview_table_df, curve_fit_delta_e_df = plot_delta_e_2000(
-            not_spect_files
+        labs, lab_mean, lab_std, overview_table_df, curve_fit_delta_e_df = (
+            plot_delta_e_2000(not_spect_files)
         )
 
         lab_means.append((folder, lab_mean))
