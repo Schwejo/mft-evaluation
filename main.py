@@ -6,6 +6,7 @@ from pandas import DataFrame, concat
 from matplotlib.pyplot import figure
 from re import compile
 import time
+import multiprocessing
 
 from reflection_spectrum_evaluation import (
     evaluate_reflection_spectrum,
@@ -22,7 +23,7 @@ from plot_util import init_figure
 
 start = time.time()
 
-output_path = Path("output/new9")
+output_path = Path("output/new10")
 
 # make sure the output directory exists
 makedirs(output_path, exist_ok=True)
@@ -126,7 +127,7 @@ def plot_curve_fit_delta_e_overview(
     )
 
 
-for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
+def handle_sample_folder(sample_folder):
     # related sample_folders (and files) share their name except for the first letter
     all_sample_files = sorted(
         glob("data/**/*{}*.txt".format(sample_folder[1:]), recursive=True),
@@ -189,5 +190,13 @@ for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
     plot_overview_table_overview(overview_table_data)
     plot_curve_fit_delta_e_overview(curve_fit_dfs, lab_means, lab_stds)
 
+
+# for sample_folder in sorted(listdir(data_path.joinpath(subdirs[0]))):
+#     handle_sample_folder(sample_folder)
+
+pool = multiprocessing.Pool()
+pool.map(handle_sample_folder, sorted(listdir(data_path.joinpath(subdirs[0]))))
+pool.close()
+pool.join()
 
 print("done", time.time() - start)
